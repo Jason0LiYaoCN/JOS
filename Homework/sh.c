@@ -65,11 +65,26 @@ runcmd(struct cmd *cmd)
       execv(ecmd->argv[0], ecmd->argv);
     } else {
         const char *binpath = "/bin/";
+        const char *binpath2 = "/usr/bin/";
         int pathLen = strlen(binpath) + strlen(ecmd->argv[0]);
         char *abs_path = (char *)malloc((pathLen) * sizeof(char));
+        int pathLen2 = strlen(binpath2) + strlen(ecmd->argv[0]);
+        char *abs_path2 = (char *)malloc((pathLen2) * sizeof(char));
         strcpy(abs_path,binpath);
+        strcpy(abs_path2,binpath2);
+        //printf("%s %s\n", abs_path, abs_path2);
         strcat(abs_path,ecmd->argv[0]);
-        execv(abs_path, ecmd->argv);
+        strcat(abs_path2,ecmd->argv[0]);
+        //printf("%s %s\n", abs_path, abs_path2);
+        if (access(abs_path, F_OK | X_OK) != 0) {
+          if (access(abs_path2, F_OK | X_OK) != 0) {
+            fprintf(stderr, "exec %s failed\n",ecmd->argv[0]);
+          } else {
+            execv(abs_path2, ecmd->argv);
+          }
+        } else {
+          execv(abs_path, ecmd->argv);
+        }
     }
     fprintf(stderr, "exec %s failed\n",ecmd->argv[0]);
     break;
@@ -87,8 +102,27 @@ runcmd(struct cmd *cmd)
 
   case '|':
     pcmd = (struct pipecmd*)cmd;
-    fprintf(stderr, "pipe not implemented\n");
-    // Your code here ...
+    if (pipe(p) < 0) {
+      fprintf(stderr, "pipe create error\n");
+    }
+    if (fork1() == 0) {
+      close(1);
+      dup(p[1]);
+      close(p[0]);
+      close(p[1]);
+      runcmd(pcmd->left);
+    }
+    if (fork1() == 0) {
+      close(0);
+      dup(p[0]);
+      close(p[0]);
+      close(p[1]);
+      runcmd(pcmd->right);
+    }
+    close(p[0]);
+    close(p[1]);
+    wait(&r);
+    wait(&r);
     break;
   }    
   _exit(0);
