@@ -17,7 +17,7 @@
  * The integer may be positive or negative,
  * so that -E_NO_MEM and E_NO_MEM are equivalent.
  */
-
+int color_flag = 0;
 static const char * const error_string[MAXERROR] =
 {
 	[E_UNSPECIFIED]	= "unspecified error",
@@ -159,7 +159,11 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		case 'c':
 			putch(va_arg(ap, int), putdat);
 			break;
-
+		// change color
+		case 'm':
+			num = getint(&ap, lflag);
+			color_flag = num;
+			break;
 		// error message
 		case 'e':
 			err = va_arg(ap, int);

@@ -10,7 +10,7 @@
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
-
+extern int color_flag;
 // Stupid I/O delay routine necessitated by historical PC design flaws
 static void
 delay(void)
@@ -163,8 +163,9 @@ static void
 cga_putc(int c)
 {
 	// if no attribute given, then use black on white
+	if (!color_flag) color_flag = 0x0700;
 	if (!(c & ~0xFF))
-		c |= 0x0700;
+		c |= color_flag;
 
 	switch (c & 0xff) {
 	case '\b':

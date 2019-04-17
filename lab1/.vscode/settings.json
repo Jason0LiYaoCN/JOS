@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "stdarg.h": "c",
+        "stdio.h": "c",
+        "console.h": "c",
+        "kbdreg.h": "c",
+        "types.h": "c",
+        "assert.h": "c"
+    }
+}
