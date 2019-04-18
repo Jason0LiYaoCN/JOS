@@ -61,7 +61,7 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       _exit(0);
-    if (access(ecmd->argv[0], S_IXUSR | S_IRUSR) == 0){
+    if (access(ecmd->argv[0], F_OK | X_OK) == 0){
       execv(ecmd->argv[0], ecmd->argv);
     } else {
         const char *binpath = "/bin/";
