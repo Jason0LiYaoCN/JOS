@@ -102,7 +102,15 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-
+	cprintf("boot_alloc memory at %x\n", nextfree);
+	cprintf("Next memory at %x\n", ROUNDUP((char *) (nextfree+n), PGSIZE));
+	if (n != 0) {
+		char *next = nextfree;
+		nextfree = ROUNDUP((char *) (nextfree+n), PGSIZE);
+		return next;
+	} else {
+		return nextfree;
+	}
 	return NULL;
 }
 
@@ -125,7 +133,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -839,3 +847,4 @@ check_page_installed_pgdir(void)
 
 	cprintf("check_page_installed_pgdir() succeeded!\n");
 }
+
