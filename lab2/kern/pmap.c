@@ -102,8 +102,8 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-	cprintf("boot_alloc memory at %x\n", nextfree);
-	cprintf("Next memory at %x\n", ROUNDUP((char *) (nextfree+n), PGSIZE));
+	// cprintf("boot_alloc memory at %x\n", nextfree);
+	// cprintf("Next memory at %x\n", ROUNDUP((char *) (nextfree+n), PGSIZE));
 	if (n != 0) {
 		char *next = nextfree;
 		nextfree = ROUNDUP((char *) (nextfree+n), PGSIZE);
@@ -157,7 +157,7 @@ mem_init(void)
 	// Your code goes here:
 	pages = (struct PageInfo *)boot_alloc(npages * sizeof(struct PageInfo));
 	memset(pages, 0, npages * sizeof(struct PageInfo));
-	cprintf("npages is %d pages: %x size is %d\n",npages, pages, sizeof(struct PageInfo));
+	// cprintf("npages is %d pages: %x size is %d\n",npages, pages, sizeof(struct PageInfo));
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -312,9 +312,8 @@ page_alloc(int alloc_flags)
 	}
 	struct PageInfo *page = page_free_list;
 	page_free_list = page_free_list->pp_link;
+	page->pp_link = NULL;
 	if (alloc_flags & ALLOC_ZERO) {
-		page->pp_link = NULL;
-		cprintf("page2kva(page): %x page is at %x pages is at %x\n", page2kva(page), page, pages);
 		memset(page2kva(page), '\0', PGSIZE);
 	}
 	return page;
@@ -330,10 +329,12 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
-	assert(pp->pp_ref == 0 || pp->pp_link == NULL);
+	if (pp->pp_ref != 0 || pp->pp_link != NULL)
+	{
+        panic("can't free page in use, or page is already in the free list");
+	}
 	pp->pp_link = page_free_list;
 	page_free_list = pp;
-	return;
 }
 
 //
@@ -372,28 +373,27 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	uint32_t pdeIndex = (uint32_t)va >> 22;
-	// If this is true, and create == false, then pgdir_walk returns NULL.
-	if (pgdir[pdeIndex] == 0 && create == 0) {
-		return NULL;
-	}
-	// Otherwise, pgdir_walk allocates a new page table page with page_alloc.
-	if (pgdir[pdeIndex] == 0) {
-		struct PageInfo* page = page_alloc(1);
-		if (page == NULL)
+	uint32_t pdx = PDX(va);
+	uint32_t ptx = PTX(va);
+	pde_t *pde; //page directory entry
+	pte_t *pte; //page table entry
+	struct PageInfo *pp;
+
+	pde = &pgdir[pdx];
+	if (*pde & PTE_P) {
+		pte = KADDR(PTE_ADDR(*pde));
+	} else {
+		if (!create) {
 			return NULL;
-		page->pp_ref++;
-		physaddr_t pgAddress = page2pa(page);
-		pgAddress |= PTE_U;
-		pgAddress |= PTE_P;
-		pgAddress |= PTE_W;
-		pgdir[pdeIndex] = pgAddress;
+		}
+		if (!(pp = page_alloc(ALLOC_ZERO))) {
+			return NULL;
+		}
+		pte = (pte_t *)page2kva(pp);
+		pp->pp_ref++;
+		*pde = PADDR(pte) | PTE_P | PTE_W | PTE_U;
 	}
-	pte_t pgAdd = pgdir[pdeIndex];
-	pgAdd = pgAdd>>12<<12;
-	int pteIndex =(pte_t)va >>12 & 0x3ff;
-	pte_t * pte =(pte_t*) pgAdd + pteIndex;
-	return KADDR( (pte_t) pte );
+	return &pte[ptx];
 }
 
 //
@@ -928,4 +928,3 @@ check_page_installed_pgdir(void)
 
 	cprintf("check_page_installed_pgdir() succeeded!\n");
 }
-
