@@ -21,10 +21,13 @@ struct Command {
 	int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
 
+int csa_backtrace(int argc, char **argv, struct Trapframe *tf);
+
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "backtrace", "Display backtrace information", backtrace }
+	{ "mon_backtrace", "mon_backtrace", mon_backtrace },
+	{ "csa_backtrace", "csa_backtrace", csa_backtrace },
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -74,7 +77,7 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 }
 
 int
-backtrace(int argc, char **argv, struct Trapframe *tf)
+csa_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
   uint32_t* ebp = (uint32_t*) read_ebp();
   cprintf("Stack backtrace:\n");
@@ -150,7 +153,6 @@ monitor(struct Trapframe *tf)
 
 	cprintf("Welcome to the JOS kernel monitor!\n");
 	cprintf("Type 'help' for a list of commands.\n");
-	//cprintf("%m%s\n%m%s\n%m%s\n", 0x0100, "blue", 0x0200, "green", 0x0400, "red");
 
 	while (1) {
 		buf = readline("K> ");
