@@ -13,7 +13,8 @@ void
 umain(int argc, char **argv)
 {
 	envid_t who;
-
+	cprintf("hello, world\n");
+    cprintf("i am environment %08x\n", thisenv->env_id);
 	if ((who = fork()) == 0) {
 		// Child
 		ipc_recv(&who, TEMP_ADDR_CHILD, 0);
